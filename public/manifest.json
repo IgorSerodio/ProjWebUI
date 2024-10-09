@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Minha Geladeira",
+  "name": "Na Minha Geladeira - Busca de Receitas",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,26 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#ffffff",
+  "background_color": "#f8f9fa",
+  "description": "Encontre receitas com os ingredientes que você já tem na sua geladeira!",
+  "lang": "pt-BR",
+  "orientation": "portrait",
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Buscar Receitas",
+      "short_name": "Buscar",
+      "description": "Encontre receitas com base nos ingredientes disponíveis",
+      "url": "/",
+      "icons": [{ "src": "/icons/search.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Perfil",
+      "short_name": "Perfil",
+      "description": "Acesse suas receitas e crie novas",
+      "url": "/profile",
+      "icons": [{ "src": "/icons/profile.png", "sizes": "192x192" }]
+    }
+  ]
 }
