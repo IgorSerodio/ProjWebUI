@@ -1,13 +1,29 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {getRecipesByIngredients} from '../services/api';
+import React, { useState, useContext, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
+import { getRecipesByIngredients, getAllIngredients } from '../services/api'; 
 import { AuthContext } from '../contexts/AuthContext';
 
 function IngredientSearch() {
   const [ingredients, setIngredients] = useState([{ name: '', quantity: 0 }]);
+  const [availableIngredients, setAvailableIngredients] = useState([]); 
   const [recipes, setRecipes] = useState([]);
-  const navigate = useNavigate();
-  const { isAuthenticated } = useContext(AuthContext); 
+  const [errorMessage, setErrorMessage] = useState('');
+  const history = useHistory();
+  const { token, logout } = useContext(AuthContext);
+
+  useEffect(() => {
+    const fetchIngredients = async () => {
+      try {
+        const response = await getAllIngredients(); 
+        setAvailableIngredients(response);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage(error.message || 'Erro ao buscar ingredientes.');
+      }
+    };
+
+    fetchIngredients();
+  }, []);
 
   const addIngredient = () => {
     setIngredients([...ingredients, { name: '', quantity: 0 }]);
@@ -20,20 +36,32 @@ function IngredientSearch() {
   };
 
   const searchRecipes = async () => {
+    setErrorMessage('');
+    const emptyIngredient = ingredients.some(ingredient => !ingredient.name.trim() || ingredient.quantity <= 0);
+    if (emptyIngredient) {
+      setErrorMessage('Por favor, preencha todos os ingredientes corretamente.');
+      return;
+    }
+
     try {
-      let ingredientList = ingredients.map((ingredient) => ingredient.name);
-      const response = await getRecipesByIngredients(ingredientList.join(", "));
-      const adaptedRecipes = adaptRecipes(response.data, ingredients);
-      setRecipes(adaptedRecipes);
+      const ingredientList = (ingredients.map((ingredient) => ingredient.name)).join(", ");
+      const response = await getRecipesByIngredients(ingredientList);
+      
+      if (response.status === 404) {
+        setErrorMessage('Nenhuma receita encontrada.');
+      } else {
+        const adaptedRecipes = adaptRecipes(response, ingredients);
+        setRecipes(adaptedRecipes);
+      }
     } catch (error) {
       console.error(error);
-      alert('Erro ao buscar receitas');
+      setErrorMessage(error.message || 'Erro ao buscar receitas. Tente novamente.');
     }
   };
 
   const adaptRecipes = (recipes, availableIngredients) => {
     return recipes.map(recipe => {
-      const adaptedIngredients = recipe.ingredients.map(ingredient => {
+      const adaptedIngredients = recipe.ingredientesReceita.map(ingredient => {
         const available = availableIngredients.find(i => i.name === ingredient.nomeDoIngrediente);
         return {
           ...ingredient,
@@ -41,56 +69,65 @@ function IngredientSearch() {
         };
       });
 
-      // Calcular o fator mínimo
-      const minFactor = Math.min(...adaptedIngredients.map(i => i.quantidade).filter(q => q > 0));
-
-      // Ajustar as quantidades com o fator mínimo
+      const minFactor = Math.min(Math.min(...adaptedIngredients.map(i => i.quantidade).filter(q => q > 0)),1);
       const adjustedIngredients = adaptedIngredients.map(ingredient => ({
         ...ingredient,
         quantidade: ingredient.quantidade * minFactor,
       }));
 
-      return { ...recipe, ingredientes: adjustedIngredients, minFactor }; // Passar o fator mínimo
+      return { ...recipe, ingredientes: adjustedIngredients};
     });
   };
 
   const goToLogin = () => {
-    navigate('/login'); // Redireciona para a página de login
+    history.push('/login');
   };
 
   const goToSignup = () => {
-    navigate('/signup'); // Redireciona para a página de cadastro
+    history.push('/signup');
   };
 
   const goToProfile = () => {
-    navigate('/profile'); // Redireciona para a página do perfil
+    history.push('/profile');
   };
 
-  const viewRecipeDetails = (id, minFactor) => {
-    navigate(`/recipes/${id}`, { state: { minFactor } }); // Passa o fator mínimo ao redirecionar
+  const doLogout = () => {
+    logout();
+    history.push('/dashboard');
   };
+
+  const viewRecipeDetails = (recipe) => {
+    history.push(`/recipes/${recipe.id}`, { recipe });
+  };  
 
   return (
     <div>
-      {/* Botões de Login, Cadastro ou Perfil */}
-      {!isAuthenticated ? (
+      {!token ? (
         <div>
           <button onClick={goToLogin}>Login</button>
           <button onClick={goToSignup}>Cadastro</button>
         </div>
       ) : (
-        <button onClick={goToProfile}>Perfil</button> // Botão de perfil para usuário autenticado
+        <div>
+          <button onClick={goToProfile}>Perfil</button>
+          <button onClick={doLogout}>Logout</button>
+        </div>
       )}
+      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
 
-      {/* Lista de Ingredientes */}
       {ingredients.map((ingredient, index) => (
         <div key={index}>
-          <input
-            type="text"
-            placeholder="Ingrediente"
+          <select
             value={ingredient.name}
             onChange={(e) => handleChange(index, 'name', e.target.value)}
-          />
+          >
+            <option value="">Selecione um ingrediente</option>
+            {availableIngredients.map((ing) => (
+              <option key={ing.nome} value={ing.nome}>
+                {ing.nome} ({ing.tipoDeMedida})
+              </option>
+            ))}
+          </select>
           <input
             type="number"
             placeholder="Quantidade"
@@ -102,17 +139,16 @@ function IngredientSearch() {
       <button onClick={addIngredient}>Adicionar Ingrediente</button>
       <button onClick={searchRecipes}>Buscar Receitas</button>
 
-      {/* Lista de Receitas Encontradas */}
       <div>
         {recipes.map((recipe, index) => (
-          <div
-            key={index}
-            onClick={() => viewRecipeDetails(recipe.id, recipe.minFactor)} // Passa o fator mínimo para RecipeDetails
-            style={{ cursor: 'pointer', textDecoration: 'underline', color: 'blue' }}
-          >
-            {recipe.nome} {/* Usar o nome correto da receita */}
-          </div>
-        ))}
+        <div
+          key={index}
+          onClick={() => viewRecipeDetails(recipe)}  // Passa o objeto completo da receita
+          style={{ cursor: 'pointer', textDecoration: 'underline', color: 'blue' }}
+        >
+        {recipe.nome}
+      </div>
+))}
       </div>
     </div>
   );

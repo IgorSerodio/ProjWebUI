@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/';
+const BASE_URL = 'http://localhost:5000';
 
 const apiRequest = async (endpoint, method = 'GET', body = null, requiresAuth = false) => {
   const headers = {
@@ -27,7 +27,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null, requiresAuth = 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Erro na requisição à API');
+    throw new Error(data.error || 'Erro na requisição à API');
   }
 
   return data;
@@ -48,7 +48,7 @@ export const getUserByEmail = (userEmail) => {
 
 // Endpoints de receitas
 export const getRecipesByIngredients = (ingredients) => {
-  return apiRequest('/receitas/ingredientes', 'GET', { ingredients });
+  return apiRequest(`/receitas/ingredientes?ingredientes=${encodeURIComponent(ingredients)}`, 'GET');
 };
 
 export const createRecipe = (recipeData) => {
@@ -56,15 +56,11 @@ export const createRecipe = (recipeData) => {
 };
 
 export const updateRecipe = (recipeId, updatedData) => {
-  return apiRequest(`/receitas/${recipeId}`, 'PUT', updatedData, true); // Requer autenticação
+  return apiRequest(`/receitas/${recipeId}`, 'PUT', updatedData, true); 
 };
 
 export const deleteRecipe = (recipeId) => {
-  return apiRequest(`/receitas/${recipeId}`, 'DELETE', null, true); // Requer autenticação
-};
-
-export const getRecipeDetails = (recipeId) => {
-  return apiRequest(`/receitas/${recipeId}`, 'GET');
+  return apiRequest(`/receitas/${recipeId}`, 'DELETE', null, true);
 };
 
 export const getUserRecipes = (userId) => {
@@ -73,7 +69,7 @@ export const getUserRecipes = (userId) => {
 
 // Endpoints de ingredientes
 export const getAllIngredients = () => {
-  return apiRequest('/ingredients', 'GET');
+  return apiRequest('/ingredientes', 'GET');
 };
 
 // Endpoints de avaliações

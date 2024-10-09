@@ -1,25 +1,26 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import {loginUser, getUserByEmail} from '../services/api';
 import { AuthContext } from '../contexts/AuthContext';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { setToken, setUserId } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { setToken, setUserId, setNickname } = useContext(AuthContext);
+  const history = useHistory();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const response = await loginUser(email, password);
-      setToken(response.data.token);
+      setToken(response.token);
       const user = await getUserByEmail(email);
-      setUserId(user.data.id);
-      navigate('/dashboard');
+      setUserId(user.id);
+      setNickname(user.apelido);
+      history.push('/dashboard');
     } catch (error) {
       console.error(error);
-      alert('Erro ao fazer login');
+      alert(error);
     }
   };
 

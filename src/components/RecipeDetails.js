@@ -1,38 +1,42 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
-import { getRecipeDetails, addReview } from '../services/api';
+import React, { useState, useContext, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+import { addReview, getRecipeReviews } from '../services/api'; 
 
 function RecipeDetails() {
-  const { id } = useParams();
-  const { state } = useLocation(); 
-  const [recipe, setRecipe] = useState(null);
+  const { state } = useLocation();
+  const { recipe } = state;        
   const [review, setReview] = useState({ rating: '', comment: '' });
+  const [reviews, setReviews] = useState([]); 
   const { userId } = useContext(AuthContext);
-  const minFactor = state?.minFactor || 1; 
 
   useEffect(() => {
-    const fetchRecipe = async () => {
-      const response = await getRecipeDetails(id);
-      setRecipe(response.data);
+    const fetchReviews = async () => {
+      try {
+        const response = await getRecipeReviews(recipe.id);
+        setReviews(response);
+      } catch (error) {
+        console.error(error);
+      }
     };
-    fetchRecipe();
-  }, [id]);
+
+    fetchReviews();
+  }, [recipe.id]);
+
+  const adjustedIngredients = recipe.ingredientes.map(ingredient => ({
+    ...ingredient,
+    quantidade: ingredient.quantidade,
+  }));
 
   const submitReview = async () => {
     try {
-      await addReview({ comentario: review.comment, nota: review.rating, idDoUsuario: userId, idDaReceita: id });
+      await addReview({ comentario: review.comment, nota: review.rating, idDoUsuario: Number(userId), idDaReceita: Number(recipe.id) });
       alert('Avaliação enviada!');
     } catch (error) {
       console.error(error);
-      alert('Erro ao enviar avaliação');
+      alert(error);
     }
   };
-
-  const adjustedIngredients = recipe?.ingredientes.map(ingredient => ({
-    ...ingredient,
-    quantidade: ingredient.quantidade * minFactor,
-  }));
 
   return (
     <div>
@@ -49,14 +53,18 @@ function RecipeDetails() {
             ))}
           </ul>
           <h3>Avaliações</h3>
-          {recipe.avaliacoes.map((r) => (
-            <div key={r.idDoUsuario}>{r.comentario} - Nota: {r.nota}</div>
-          ))}
+          {reviews.length > 0 ? ( // Verifica se há avaliações
+            reviews.map((r) => (
+              <div key={r.idDoUsuario}>{r.comentario} - Nota: {r.nota}</div>
+            ))
+          ) : (
+            <p>Sem avaliações ainda.</p> // Exibe mensagem se não houver avaliações
+          )}
           <h4>Avaliar Receita</h4>
           <input
             type="number"
             value={review.rating}
-            onChange={(e) => setReview({ ...review, rating: e.target.value })}
+            onChange={(e) => setReview({ ...review, rating: Number(e.target.value)})}
             placeholder="Nota (1-5)"
           />
           <input

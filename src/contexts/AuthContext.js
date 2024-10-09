@@ -1,12 +1,13 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [userId, setUserId] = useState(null);
-  const navigate = useNavigate();
+  const [nickname, setNickname] = useState('');
+  const history = useHistory();
 
   useEffect(() => {
     if (token) {
@@ -19,12 +20,13 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken('');
     setUserId(null); 
+    setNickname(''); 
     localStorage.removeItem('token');
-    navigate('/login');
+    history.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ token, setToken, userId, setUserId, logout }}>
+    <AuthContext.Provider value={{ token, setToken, userId, setUserId, nickname, setNickname, logout }}>
       {children}
     </AuthContext.Provider>
   );

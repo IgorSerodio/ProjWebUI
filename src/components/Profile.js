@@ -1,34 +1,49 @@
 import React, { useState, useEffect, useContext } from 'react';
-import {getUserRecipes, createRecipe} from '../services/api';
+import { getUserRecipes, createRecipe, getAllIngredients } from '../services/api'; 
 import { AuthContext } from '../contexts/AuthContext';
 
 function Profile() {
   const [recipes, setRecipes] = useState([]);
-  const [newRecipe, setNewRecipe] = useState({ nome: '', descricao: '', ingredientesReceita: [{ nomeDoIngrediente: '', quantidade: 0 }] });
-  const { userId } = useContext(AuthContext);
+  const [newRecipe, setNewRecipe] = useState({ nome: '', descricao: '', ingredientes: [] });
+  const [ingredients, setIngredients] = useState([]);
+  const { userId, nickname } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchRecipes = async () => {
       if (!userId) return;
       try {
         const response = await getUserRecipes(userId);
-        setRecipes(response.data); 
+        setRecipes(response);
       } catch (error) {
-        console.error(error);
-        alert('Erro ao buscar receitas');
+        if (error.response && error.response.status !== 404) {
+          console.error(error);
+          alert(error || 'Erro ao buscar receitas');
+        }
       }
     };
+
+    const fetchIngredients = async () => {
+      try {
+        const response = await getAllIngredients(); 
+        setIngredients(response);
+      } catch (error) {
+        console.error(error);
+        alert('Erro ao buscar ingredientes.');
+      }
+    };
+
     fetchRecipes();
+    fetchIngredients();
   }, [userId]);
 
   const handleIngredientChange = (index, field, value) => {
-    const updatedIngredients = [...newRecipe.ingredientesReceita];
+    const updatedIngredients = [...newRecipe.ingredientes];
     updatedIngredients[index][field] = value;
-    setNewRecipe({ ...newRecipe, ingredientesReceita: updatedIngredients });
+    setNewRecipe({ ...newRecipe, ingredientes: updatedIngredients });
   };
 
   const addIngredientField = () => {
-    setNewRecipe({ ...newRecipe, ingredientesReceita: [...newRecipe.ingredientesReceita, { nomeDoIngrediente: '', quantidade: 0 }] });
+    setNewRecipe({ ...newRecipe, ingredientes: [...newRecipe.ingredientes, { nomeDoIngrediente: '', quantidade: 0 }] });
   };
 
   const createRecipe_ = async () => {
@@ -39,19 +54,25 @@ function Profile() {
       };
       await createRecipe(recipeData);
       alert('Receita criada!');
-      setNewRecipe({ nome: '', descricao: '', ingredientesReceita: [{ nomeDoIngrediente: '', quantidade: 0 }] });
+      setNewRecipe({ nome: '', descricao: '', ingredientes: [] });
     } catch (error) {
       console.error(error);
-      alert('Erro ao criar receita');
+      alert(error || 'Erro ao criar receita');
     }
   };
 
   return (
     <div>
+      <h1>Bem-vindo, {nickname}!</h1>
+
       <h2>Minhas Receitas</h2>
-      {recipes.map((recipe) => (
-        <div key={recipe.id}>{recipe.nome}</div>
-      ))}
+      {recipes.length > 0 ? (
+        recipes.map((recipe) => (
+          <div key={recipe.id}>{recipe.nome}</div>
+        ))
+      ) : (
+        <p>Você não postou nenhuma receita.</p>
+      )}
 
       <h3>Criar nova receita</h3>
       <input
@@ -68,19 +89,24 @@ function Profile() {
       />
 
       <h4>Ingredientes</h4>
-      {newRecipe.ingredientesReceita.map((ingredient, index) => (
+      {newRecipe.ingredientes.map((ingredient, index) => (
         <div key={index}>
-          <input
-            type="text"
+          <select
             value={ingredient.nomeDoIngrediente}
             onChange={(e) => handleIngredientChange(index, 'nomeDoIngrediente', e.target.value)}
-            placeholder={`Ingrediente ${index + 1}`}
-          />
+          >
+            <option value="">Selecione um ingrediente</option>
+            {ingredients.map((ing) => (
+              <option key={ing.nome} value={ing.nome}>
+                {ing.nome} ({ing.tipoDeMedida})
+              </option>
+            ))}
+          </select>
           <input
             type="number"
-            value={ingredient.quantidade}
-            onChange={(e) => handleIngredientChange(index, 'quantidade', e.target.value)}
             placeholder="Quantidade"
+            value={ingredient.quantidade}
+            onChange={(e) => handleIngredientChange(index, 'quantidade',  Number(e.target.value))}
           />
         </div>
       ))}

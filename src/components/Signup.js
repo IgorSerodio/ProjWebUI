@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { registerUser } from '../services/api';
 
 function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
-  const navigate = useNavigate();
+  const history = useHistory();
 
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      await registerUser({ email: email, senha: password, apelido: nickname });
-      navigate('/login'); 
+      await registerUser({ email: email, senha: password, apelido: nickname, adm: false });
+      history.push('/login'); 
     } catch (error) {
       console.error(error);
-      alert('Erro ao cadastrar');
+      alert(error);
     }
   };
 

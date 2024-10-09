@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import IngredientSearch from './components/IngredientSearch';
@@ -12,14 +12,14 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
+        <Switch>
           <Route path="/signup" component={Signup} />
           <Route path="/login" component={Login} />
           <Route path="/dashboard" component={IngredientSearch} />
           <Route path="/profile" component={Profile} />
           <Route path="/recipes/:id" component={RecipeDetails} />
           <Route path="/" component={IngredientSearch} />
-        </Routes>
+        </Switch>
       </AuthProvider>
     </Router>
   );
