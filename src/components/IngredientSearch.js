@@ -61,21 +61,17 @@ function IngredientSearch() {
 
   const adaptRecipes = (recipes, availableIngredients) => {
     return recipes.map(recipe => {
-      const adaptedIngredients = recipe.ingredientesReceita.map(ingredient => {
+      const ingredientProportions = recipe.ingredientesReceita.map(ingredient => {
         const available = availableIngredients.find(i => i.name === ingredient.nomeDoIngrediente);
         return {
           ...ingredient,
-          quantidade: available ? Math.floor(available.quantity / ingredient.quantidade) : 0
+          quantidade: available ? available.quantity / ingredient.quantidade : 0
         };
       });
 
-      const minFactor = Math.min(Math.min(...adaptedIngredients.map(i => i.quantidade).filter(q => q > 0)),1);
-      const adjustedIngredients = adaptedIngredients.map(ingredient => ({
-        ...ingredient,
-        quantidade: ingredient.quantidade * minFactor,
-      }));
+      const minFactor = Math.min(...ingredientProportions.map(i => i.quantidade).filter(q => q > 0));
 
-      return { ...recipe, ingredientes: adjustedIngredients};
+      return { ...recipe, minFactor: minFactor};
     });
   };
 
@@ -143,7 +139,7 @@ function IngredientSearch() {
         {recipes.map((recipe, index) => (
         <div
           key={index}
-          onClick={() => viewRecipeDetails(recipe)}  // Passa o objeto completo da receita
+          onClick={() => viewRecipeDetails(recipe)} 
           style={{ cursor: 'pointer', textDecoration: 'underline', color: 'blue' }}
         >
         {recipe.nome}
