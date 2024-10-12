@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { getUserRecipes, createRecipe, getAllIngredients } from '../services/api'; 
+import { getUserRecipes, createRecipe, getAllIngredients, deleteRecipe } from '../services/api'; 
 import { AuthContext } from '../contexts/AuthContext';
+import { useHistory } from 'react-router-dom';
 
 function Profile() {
   const [recipes, setRecipes] = useState([]);
   const [newRecipe, setNewRecipe] = useState({ nome: '', descricao: '', ingredientes: [] });
   const [ingredients, setIngredients] = useState([]);
   const { userId, nickname } = useContext(AuthContext);
+  const history = useHistory();
 
   useEffect(() => {
     const fetchRecipes = async () => {
@@ -35,6 +37,24 @@ function Profile() {
     fetchRecipes();
     fetchIngredients();
   }, [userId]);
+
+  const handleRecipeClick = (recipe) => {
+    history.push(`recipes/${recipe.id}`, { recipe });
+  };
+
+  const handleDeleteRecipe = async (recipeId) => {
+    const confirmDelete = window.confirm('Você tem certeza que deseja apagar esta receita?');
+    if (!confirmDelete) return;
+
+    try {
+      await deleteRecipe(recipeId);
+      alert('Receita apagada com sucesso!');
+      setRecipes(recipes.filter(recipe => recipe.id !== recipeId));
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao apagar receita.');
+    }
+  };
 
   const handleIngredientChange = (index, field, value) => {
     const updatedIngredients = [...newRecipe.ingredientes];
@@ -68,7 +88,17 @@ function Profile() {
       <h2>Minhas Receitas</h2>
       {recipes.length > 0 ? (
         recipes.map((recipe) => (
-          <div key={recipe.id}>{recipe.nome}</div>
+          <div key={recipe.id} style={{ marginBottom: '10px' }}>
+            <div 
+              onClick={() => handleRecipeClick(recipe)} 
+              style={{ cursor: 'pointer', textDecoration: 'underline', color: 'blue' }}
+            >
+              {recipe.nome}
+            </div>
+            <button onClick={() => handleDeleteRecipe(recipe.id)} style={{ marginLeft: '10px' }}>
+              Apagar
+            </button>
+          </div>
         ))
       ) : (
         <p>Você não postou nenhuma receita.</p>
